@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DAS Status Checker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SVT Access Portal</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     * {
@@ -13,7 +13,7 @@
     }
     body {
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(to right, #fdfcfb, #e2d1c3);
+      background: linear-gradient(to right, #fffaf0, #f3e6d7);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -27,7 +27,7 @@
       box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
       max-width: 420px;
       width: 100%;
-      border: 2px solid #d4af37;
+      border: 3px solid #bfa046;
     }
     h2 {
       margin-bottom: 1.5rem;
@@ -39,7 +39,7 @@
       display: block;
       margin-bottom: 0.5rem;
       font-weight: 600;
-      color: #444;
+      color: #555;
     }
     input[type="text"] {
       width: 100%;
@@ -53,7 +53,7 @@
     button {
       width: 100%;
       padding: 0.9rem;
-      background: #d4af37;
+      background: #bfa046;
       color: #fff;
       font-size: 1.1rem;
       border: none;
@@ -63,13 +63,13 @@
       font-weight: 600;
     }
     button:hover {
-      background: #c29e2e;
+      background: #a88e35;
     }
     #message {
       margin-top: 1rem;
       text-align: center;
       font-weight: 600;
-      color: #c00;
+      color: #b22222;
     }
     @media (max-width: 480px) {
       .container {
@@ -87,14 +87,18 @@
     <div id="message"></div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script>
-    const driveBaseUrl = "https://drive.google.com/file/d/";
     const driveFiles = {
-      playgroup: "1KQR0zQoCVqCCoOd77MvuWxzvV0DPQ3n7",
-      nursery: "1hs8V_fXsZyNqQOTNsJ3A14Q0XOVOOCVk",
-      prep: "1A9vLy0dBG9Rml_hI5uS37RrwktJZCVJb",
-      one: "1cJ4PPPISyxpIMu6Cg3VnbG91MaW6L1Ow",
-      two: "1xvcFNb9c0xtuaXRNTiTBn8KWbeOxt3tY",;
+      One: "https://drive.google.com/file/d/1cJ4PPPISyxpIMu6Cg3VnbG91MaW6L1Ow/view?usp=drive_link",
+      Two: "https://drive.google.com/file/d/1xvcFNb9c0xtuaXRNTiTBn8KWbeOxt3tY/view?usp=drive_link",
+      Three: "https://drive.google.com/file/d/1Dy6VyQfCN1W5kRx38sjC5_I1gy4OgT6q/view?usp=drive_link",
+      Four: "https://drive.google.com/file/d/1ZV1TQQN_0BdrZiPtM0_mj5nilvjLi6LN/view?usp=drive_link",
+      Five: "https://drive.google.com/file/d/141E2Kj-U7C7LLohHPSE5w7D6niKzJR0U/view?usp=drive_link",
+      Six: "https://drive.google.com/file/d/1zoHYDvce6M6BuWEbD4N7GXByya-ZXXRP/view?usp=drive_link",
+      Seven: "https://drive.google.com/file/d/14NYInjiN-uCCWMrl_JSY8cG6apmFHNA_/view?usp=drive_link",
+      Eight: "https://drive.google.com/file/d/14PyY0AYohf4bclAp91PYVnHhZYZ80Bsd/view?usp=drive_link"
+    };
 
     async function loadStudentData() {
       const response = await fetch('students.xlsx');
@@ -102,12 +106,14 @@
       const workbook = XLSX.read(data, { type: 'array' });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(sheet);
+      console.log("Parsed Excel data:", json);
       return json;
     }
 
     async function checkStatus() {
       const input = document.getElementById("dasInput").value.trim();
       const message = document.getElementById("message");
+      message.textContent = "";
 
       if (!input) {
         message.textContent = "Please enter a DAS number.";
@@ -117,23 +123,30 @@
       const students = await loadStudentData();
       const record = students.find(student => String(student["Student ID"]).trim() === input);
 
+      console.log("Matched Record:", record);
+
       if (!record) {
         message.textContent = "DAS number not found.";
         return;
       }
 
-      if (record.status.toLowerCase() === "clear") {
-        const classKey = record.Grade.replace(/\s+/g, '').toLowerCase();
-        const fileId = driveFiles[classKey];
+      const status = (record["status "] || "").toLowerCase().trim();
+      const grade = (record.Grade || "").replace(/\s+/g, '');
+      console.log("Student Status:", status);
+      console.log("Student Grade:", grade);
 
-        if (fileId) {
-          const pdfUrl = `${driveBaseUrl}${fileId}/view`;
-          window.open(pdfUrl, '_blank');
+      const url = driveFiles[grade];
+
+      if (status === "clear") {
+        if (url) {
+          console.log("Redirecting to:", url);
+          window.location.href = url;
         } else {
-          message.textContent = `No file found for class: ${record.Grade}`;
+          message.textContent = `No file linked for class: ${grade}`;
         }
       } else {
-        message.textContent = "Status is pending. SVT not available.";
+        console.log("Access Blocked: Status is pending.");
+        message.textContent = "Restricted Access: Status is pending.";
       }
     }
 
@@ -144,7 +157,5 @@
       }
     }
   </script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </body>
 </html>
